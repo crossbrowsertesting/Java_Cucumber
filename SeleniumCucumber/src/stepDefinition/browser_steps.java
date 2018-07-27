@@ -1,17 +1,23 @@
 package stepDefinition;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
+import org.openqa.selenium.WebDriver;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import junit.framework.Assert;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.By;
-
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import org.apache.commons.codec.binary.Base64;
+import java.io.OutputStreamWriter;
 
 public class browser_steps {	
-	static String  username = "Nathaniel.Stokes@Smartbear.com";
-static String authkey = "u5cc514b61f3e691";
+	static String  username = "YourUserName";
+static String authkey = "YourAuthKey";
 static RemoteWebDriver driver;
 
 	public browser_steps() {
@@ -72,18 +78,50 @@ static RemoteWebDriver driver;
 		
 		int size = driver.findElements(By.className("ng-pristine")).size();
 		try {
-		Assert.assertEquals(size,6);
+		Assert.assertEquals(size, 6);
 		
-		//Handle your pass case
-		
+		setScore("pass");
 		driver.quit();
 		}catch(AssertionError ae) {
-			
-		//Handle your fail case
+			setScore("fail");
 			driver.quit();
 			System.out.println(ae.getMessage());
 		}
 	}
 	
-	  
+	   public void setScore(String score) {//need to change later to not be bool
+	        String payload = "{\"action\": \"set_score\", \"score\": \"" + score + "\"}";
+	        makeRequest("PUT", payload, "https://crossbrowsertesting.com/api/v3/selenium/"+driver.getSessionId());
+	        
+	        System.out.println("https://crossbrowsertesting.com/api/v3/selenium/"+driver.getSessionId());
+	        System.out.println(payload);
+	        
+	    }
+	    
+	
+	  private void makeRequest(String requestMethod, String payload, String baseUrl) {
+			URL url;
+			String auth = "";
+
+		        if (username != null && authkey != null) {
+		            auth = "Basic " + Base64.encodeBase64String((username + ":" + authkey).getBytes());
+		        }
+		        try {
+		            url = new URL(baseUrl);
+		            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		            conn.setRequestMethod(requestMethod);
+		            conn.setDoOutput(true);
+		            conn.setRequestProperty("Authorization", auth);
+		            conn.setRequestProperty("Content-Type", "application/json");
+		            conn.setRequestProperty("Accept", "application/json");
+		            OutputStreamWriter osw = new OutputStreamWriter(conn.getOutputStream());
+		            osw.write(payload);
+		            osw.flush();
+		            osw.close();
+		            System.out.print(conn.getResponseMessage());
+		        } catch (Exception e) {
+		        	System.out.println(e.getMessage());
+		        }
+			}
 }
+
